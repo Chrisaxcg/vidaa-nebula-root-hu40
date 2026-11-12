@@ -1,0 +1,122 @@
+{
+  "upstream": "https://github.com/carteakey/alvidaa",
+  "upstreamRevision": "38e1b51",
+  "note": "Snapshot selectivo con cambios locales; los hashes source son anteriores al saneamiento p\u00fablico. Sin historial privado. Consultar CREDITS.md.",
+  "files": [
+    {
+      "source": "alvidaa/LICENSE",
+      "published": "LICENSES/Alvidaa-MIT.txt",
+      "source_sha256": "a4b4558d77d6874e5bf64d2c9e2d68dae19a962398de7638b13b75a908543d24"
+    },
+    {
+      "source": "alvidaa/tools/launcher-host/free-my-tv-native.js",
+      "published": "tools/launcher-host/free-my-tv-native.js",
+      "source_sha256": "e0f20f8e11d77933b6c7e3bce90040a226843b3c00d8b7d57730975e8d09f02d"
+    },
+    {
+      "source": "alvidaa/tools/launcher-host/native-platform.js",
+      "published": "tools/launcher-host/native-platform.js",
+      "source_sha256": "fcf0484865a319e983f6709fb9a250726b73f5f65e00cdcbb5eb835c116ebd6c"
+    },
+    {
+      "source": "alvidaa/tools/launcher-host/native-entry.js",
+      "published": "tools/launcher-host/native-entry.js",
+      "source_sha256": "0e721a858d2f91e593f0ac626ac518b6ae3811e7c7454ea13aa72e67f6702fce"
+    },
+    {
+      "source": "alvidaa/tools/launcher-host/native-frontend.test.cjs",
+      "published": "tools/launcher-host/native-frontend.test.cjs",
+      "source_sha256": "11d8f2b14bbb012b27312ee8dfc6cb3ae8db0841a476d8db6965315dcf69ccb0"
+    },
+    {
+      "source": "alvidaa/tools/launcher-host/native-platform.test.cjs",
+      "published": "tools/launcher-host/native-platform.test.cjs",
+      "source_sha256": "f1da51e05b886860d3e5c73896908c302940bdaa6cf2452c1d1f8e080e7c0ef9"
+    },
+    {
+      "source": "alvidaa/tools/launcher-host/volume-visual.js",
+      "published": "tools/launcher-host/volume-visual.js",
+      "source_sha256": "2400a309b30c44888510acc8dfa2004d8a1a263507089b406d26f0cb52050684"
+    },
+    {
+      "source": "alvidaa/tools/launcher-host/volume-visual.test.cjs",
+      "published": "tools/launcher-host/volume-visual.test.cjs",
+      "source_sha256": "46fd4706744f66dbfb0448741f02eed4f3e575cee3c893e8f1ce6ffe97ac650d"
+    },
+    {
+      "source": "alvidaa/tools/launcher-host/build-volume-visual.cjs",
+      "published": "tools/launcher-host/build-volume-visual.cjs",
+      "source_sha256": "e40b361f8181e5e286022ecd765889d7408baa4c8c04596d6951befa5c72aa13"
+    },
+    {
+      "source": "alvidaa/tools/launcher-host/deploy-home-visual-hu40.cjs",
+      "published": "tools/launcher-host/deploy-home-visual-hu40.cjs",
+      "source_sha256": "4b8418c19498e92f495e8d7b29d80037e2a57de874d2bae7ead24d17e21f2d8b"
+    },
+    {
+      "source": "alvidaa/tools/launcher-host/assets/galaxy-v1.jpg",
+      "published": "tools/launcher-host/assets/galaxy-v1.jpg",
+      "source_sha256": "2b0776b43bc487733dbc79e0a95524f5787cf3e68163d77515df5588730a0eff"
+    },
+    {
+      "source": "alvidaa/tools/launcher-host/assets/galaxy-visual.css",
+      "published": "tools/launcher-host/assets/galaxy-visual.css",
+      "source_sha256": "32396b99d485f9609ab33fba4ad7e26766d2bed4a471b57c1c3cf4a09c99c3c6"
+    },
+    {
+      "source": "alvidaa/tools/launcher-host/third-party/free-my-tv/LICENSE",
+      "published": "tools/launcher-host/third-party/free-my-tv/LICENSE",
+      "source_sha256": "966ef935eb1e3929d31f862e7d04a80c88cf695d0e659992bba6fef1e13e69c3"
+    },
+    {
+      "source": "alvidaa/tools/tubefree/zz_codecfix.user.js",
+      "published": "tools/tubefree/zz_codecfix.user.js",
+      "source_sha256": "f2e78b16804f1faf3be31508d43d4d96d68b34127184fab87df09525820c6c28"
+    },
+    {
+      "source": "alvidaa/tools/tubefree/zz_pot.user.js",
+      "published": "tools/tubefree/zz_pot.user.js",
+      "source_sha256": "327bb445e8e168cdd30684a49abf1b75e87a9094ffd43998529909bb7fac1cc1"
+    },
+    {
+      "source": "alvidaa/tools/tubefree/pot-request.test.cjs",
+      "published": "tools/tubefree/pot-request.test.cjs",
+      "source_sha256": "e5fe9357048387fd3e31d83864016c8a6ad6587f49ad3d7392f56664534aa9dc"
+    },
+    {
+      "source": "alvidaa/tools/he40/recon/fetcha.html",
+      "published": "tools/he40/recon/fetcha.html",
+      "source_sha256": "748fd4030056e6ecad0b3dabecb719118d6eff35294d4e8286220b4d67bee5ea"
+    },
+    {
+      "source": "alvidaa/tools/he40/recon/trigger.html",
+      "published": "tools/he40/recon/trigger.html",
+      "source_sha256": "acb7feaee44d186753e86679665081df711f4bb02d3a99c817e9f9c8cd800ba2"
+    },
+    {
+      "source": "alvidaa/tools/he40/recon/pub/sw2.js",
+      "published": "tools/he40/recon/pub/sw2.js",
+      "source_sha256": "e1be8d5e5068448943bd346f0f0796f3d92bd4ad0493a477755f819ae4431889"
+    },
+    {
+      "source": "alvidaa/tools/u7q/scripts/make_min_installer.py",
+      "published": "tools/u7q/scripts/make_min_installer.py",
+      "source_sha256": "98322a4c511e3448a195c37bcd41aee33714941c050e771fd62064a37a7dceb3"
+    },
+    {
+      "source": "alvidaa/tools/u7q/scripts/build_dropbear_a7k.sh",
+      "published": "tools/u7q/scripts/build_dropbear_a7k.sh",
+      "source_sha256": "920ce564445c6222e14bc7f72d4cffe127b436ef92fa371382c0a0d77ecf32b8"
+    },
+    {
+      "source": "alvidaa/tools/sanitize/scan.py",
+      "published": "tools/sanitize/scan.py",
+      "source_sha256": "2050552dfb9682f94eed7fa64f4787bb93b137199452c97cfb87721295a98ae7"
+    },
+    {
+      "source": "alvidaa/tools/sanitize/rules.toml",
+      "published": "tools/sanitize/rules.toml",
+      "source_sha256": "359582918333a82792c64471f1429d59a7145e9036d6c14d5408459b4229f21b"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "date": "2026-11-12",
+  "model": "HU40E5600FFWV",
+  "firmware": "V0000.09.09K.P1218",
+  "recovery": "/var/local/alvidaa/home-visual-original-20261111",
+  "finalBackup": "/var/local/alvidaa/home-visual-1794465112515",
+  "cecReportedPercent": true,
+  "temporaryProbeInFinalBundle": false,
+  "files": [
+    {
+      "target": "/APPS/channelA/operation-ui/apps/launcher/js/app.js",
+      "sha256": "0e6eb5561a3f471ff06d69e2ed55cc43e9134e01caaa3b5f4802b397a71eee1f"
+    },
+    {
+      "target": "/APPS/channelA/system-ui/apps/volume-bar/js/app.js",
+      "sha256": "688fab999d49533837516cfd31aa54c22b865091cf537cde793b606bbb020465"
+    },
+    {
+      "target": "/APPS/channelA/system-ui/apps/volume-bar/js/367.js",
+      "sha256": "484bf86929a3c7d3ab6c4dc23b6494c3f36804a68cae37acb937aca811788134"
+    },
+    {
+      "target": "/APPS/channelA/system-ui/apps/volume-bar/js/762.js",
+      "sha256": "c5acea5e462cbb6ad32b1c21669b17aaedfd153c704c1b65691c088c674323b7"
+    },
+    {
+      "target": "/APPS/channelA/hisenseUI/var/local/alvidaa-galaxy-v1.jpg",
+      "sha256": "2b0776b43bc487733dbc79e0a95524f5787cf3e68163d77515df5588730a0eff"
+    },
+    {
+      "target": "/APPS/channelA/hisenseUI/var/local/alvidaa-home-visual-v1.css",
+      "sha256": "32396b99d485f9609ab33fba4ad7e26766d2bed4a471b57c1c3cf4a09c99c3c6"
+    }
+  ]
+}

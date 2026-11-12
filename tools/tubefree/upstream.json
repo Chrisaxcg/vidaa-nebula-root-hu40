@@ -1,0 +1,9 @@
+{
+  "package": "@foxreis/tizentube",
+  "version": "1.15.2",
+  "repository": "https://github.com/reisxd/TizenTube",
+  "license": "GPL-3.0-only",
+  "bundlePath": "dist/userScript.js",
+  "bundleTrimmedSha256": "7a7b88f43b92734e420f97d8e11bbc29a89d5c51e2eb77931932aaa59c0e1203",
+  "bundleOriginalTrimmedSha256": "c9425b548ea92a87dc14cd8ec25a3d1551fc9ed9928101fa20a8cedcf22a0c9a"
+}

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba local de Cobalt</title>
+<style>
+  body { margin: 3rem; background: #102218; color: #e3f5ea; font: 30px sans-serif; }
+  h1 { font-size: 1.5em; }
+  pre { white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<img src="report?caps=%7B%22htmlParsed%22%3Atrue%7D" hidden alt="">
+<script>
+  (function () {
+    var marker = document.createElement('img');
+    marker.hidden = true;
+    marker.src = 'report?caps=%7B%22scriptStarted%22%3Atrue%7D';
+    document.body.appendChild(marker);
+  }());
+</script>
+<h1>Prueba local de Cobalt</h1>
+<pre id="result">HTML cargado. Esperando JavaScript.</pre>
+<script>
+  (function () {
+    var isFunction = function (value) { return typeof value === 'function'; };
+    var media = window.MediaSource;
+    var result = {
+      javascript: true,
+      cobalt: /Cobalt\//.test(navigator.userAgent),
+      fetch: isFunction(window.fetch),
+      responseJson: !!window.Response && isFunction(window.Response.prototype.json),
+      xhr: isFunction(window.XMLHttpRequest),
+      mutationObserver: isFunction(window.MutationObserver),
+      keyboardEvent: isFunction(window.KeyboardEvent),
+      mediaSource: isFunction(media),
+      avc: false,
+      aac: false,
+      localStorage: false
+    };
+    if (media && isFunction(media.isTypeSupported)) {
+      result.avc = media.isTypeSupported('video/mp4; codecs="avc1.42E01E"');
+      result.aac = media.isTypeSupported('audio/mp4; codecs="mp4a.40.2"');
+    }
+    try {
+      var key = 'tubefree-local-probe';
+      localStorage.setItem(key, '1');
+      result.localStorage = localStorage.getItem(key) === '1';
+      localStorage.removeItem(key);
+    } catch (ignored) {}
+
+    document.getElementById('result').textContent = JSON.stringify(result, null, 2);
+    // Send only capability booleans to the same local server.
+    var report = document.createElement('img');
+    report.hidden = true;
+    report.src = 'report?caps=' + encodeURIComponent(JSON.stringify(result));
+    document.body.appendChild(report);
+  }());
+</script>
+</body>
+</html>

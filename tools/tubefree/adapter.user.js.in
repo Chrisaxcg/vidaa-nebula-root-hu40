@@ -1,0 +1,364 @@
+// ==UserScript==
+// @name         TubeFree (TizenTube mods for VIDAA)
+// @namespace    https://github.com/reisxd/TizenTube
+// @version      1.15.2+tf10.1
+// @description  TizenTube mods for YouTube TV on VIDAA. Ad response filtering and client version override are off by default.
+// @match        https://www.youtube.com/tv*
+// @run-at       document-start
+// @grant        none
+// ==/UserScript==
+
+/* [TubeFree] debug marker: console line on every matched page, plus a
+   temporary "TF" badge (8s) only on /tv so a TV screenshot can prove
+   the injection ran. No network needed for this part. */
+(function () {
+  'use strict';
+  console.log('[TubeFree] injected', location.href);
+  if (location.href.indexOf('/tv') === -1) return;
+  var showBadge = function () {
+    try {
+      if (document.getElementById('tubefree-badge')) return;
+      var badge = document.createElement('div');
+      badge.id = 'tubefree-badge';
+      badge.textContent = 'TF';
+      badge.setAttribute('style',
+        'position:fixed;top:12px;left:12px;z-index:999999;' +
+        'background:#c00;color:#fff;font:700 20px/1 sans-serif;' +
+        'padding:8px 10px;border-radius:6px;pointer-events:none;opacity:0.9;');
+      (document.body || document.documentElement).appendChild(badge);
+      setTimeout(function () {
+        if (badge.parentNode) badge.parentNode.removeChild(badge);
+      }, 8000);
+    } catch (e) {
+      console.warn('[TubeFree] badge failed', e);
+    }
+  };
+  if (document.body || document.documentElement) {
+    showBadge();
+  } else {
+    document.addEventListener('DOMContentLoaded', showBadge);
+  }
+})();
+
+/* [TubeFree] back-button mapper: the VIDAA remote "back" key arrives as
+   keyCode 8 (Backspace), which the YouTube TV app does not understand.
+   Translate it to Escape (27), the key the app uses for "go back".
+   Capture phase so we see the key even if the app stops propagation. */
+(function () {
+  'use strict';
+  try {
+    document.addEventListener('keydown', function (e) {
+      if ((e.keyCode || e.which) !== 8) return;
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('[TubeFree] back -> Escape');
+      var ev = new KeyboardEvent('keydown', {
+        key: 'Escape', code: 'Escape', keyCode: 27, which: 27,
+        bubbles: true, cancelable: true
+      });
+      document.dispatchEvent(ev);
+    }, true);
+  } catch (e) {
+    console.warn('[TubeFree] back-mapper failed', e);
+  }
+})();
+
+
+/* ======================================================================
+   [TubeFree] PHASE 0 — bulletproof adblock + SABR killer + client spoof.
+   Installed IMMEDIATELY at document-start, before anything else, each
+   hook in its own try/catch. Even if the TizenTube bundle below throws
+   or never starts, this keeps working.
+
+   Request side (spoof): TVHTML5 7.20261102 (this engine's cver) answers
+   youtubei/v1/player with SABR responses whose direct formats are not
+   playable standalone (v2 evidence: SABR removed -> instant "Something
+   went wrong"; SABR kept -> late buffer-health-0 death). yt-dlp ships a
+   "tv_downgraded" client = clientName TVHTML5 with clientVersion
+   5.20260707, a pre-SABR version string that still gets classic
+   adaptiveFormats. So we rewrite context.client.clientVersion (keeping
+   clientName=TVHTML5, so the /tv frontend contract does not change) in
+   fetch/XHR bodies hitting /youtubei/v1/player, plus the
+   X-YouTube-Client-Version header when the app sets it via XHR.
+   Override without editing this file:
+   localStorage['tubefree-spoof-client-version'] = '5.20260707' | 'off'
+
+   Response side: empties adPlacements/playerAds/adSlots, drops masthead
+   adSlotRenderer shelves, removes streamingData.serverAbrStreamingUrl +
+   sabr* keys when url/signatureCipher formats survive, and rewrites the
+   googlevideo "n" param via the nsig module. Logs per player response:
+   "[TubeFree] formats direct=N ciphered=M" and
+   "[TubeFree] nsig: fixed N urls (pending=bool)".
+   ====================================================================== */
+(function () {
+  'use strict';
+
+  /* v9: spoof OFF by default - the native TVHTML5 7.x player is healthy
+     (zero-mods session played fine). Re-enable only for debugging:
+     localStorage['tubefree-spoof-client-version'] = '5.20260707' */
+  var SPOOF_VERSION = 'off';
+  try {
+    var ov = window.localStorage.getItem('tubefree-spoof-client-version');
+    if (ov) SPOOF_VERSION = ov;
+  } catch (e) {}
+  var spoofOn = SPOOF_VERSION !== 'off';
+
+  function isPlayerUrl(url) {
+    return typeof url === 'string' && url.indexOf('/youtubei/v1/player') !== -1;
+  }
+
+  function rewritePlayerBody(body) {
+    if (typeof body !== 'string' || !spoofOn) return body;
+    try {
+      var j = JSON.parse(body);
+      var c = j && j.context && j.context.client;
+      if (c && String(c.clientName).toUpperCase().indexOf('TVHTML5') === 0) {
+        if (c.clientVersion !== SPOOF_VERSION) {
+          console.log('[TubeFree] spoof player request: TVHTML5 ' + c.clientVersion + ' -> ' + SPOOF_VERSION);
+          c.clientVersion = SPOOF_VERSION;
+        }
+        return JSON.stringify(j);
+      }
+    } catch (e) {}
+    return body;
+  }
+
+  /* ---- request hooks ---- */
+
+  try {
+    var origFetch = window.fetch;
+    if (origFetch) {
+      window.fetch = function (input, init) {
+        try {
+          var url = typeof input === 'string' ? input
+            : (input && typeof input === 'object' && input.url) ? input.url
+            : (input instanceof URL ? input.toString() : '');
+          if (spoofOn && isPlayerUrl(url)) {
+            if (init && typeof init.body === 'string') {
+              init.body = rewritePlayerBody(init.body);
+            } else if (typeof Request !== 'undefined' && input instanceof Request && input.method === 'POST') {
+              return input.text().then(function (txt) {
+                return origFetch.call(window, url, {
+                  method: input.method,
+                  headers: input.headers,
+                  mode: input.mode,
+                  credentials: input.credentials,
+                  body: rewritePlayerBody(txt)
+                });
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('[TubeFree] fetch spoof failed (passing through)', e);
+        }
+        return origFetch.apply(this, arguments.length ? [input, init] : arguments);
+      };
+      console.log('[TubeFree] player-request spoof installed (fetch, TVHTML5 ' + SPOOF_VERSION + ')');
+    }
+  } catch (e) {
+    console.error('[TubeFree] fetch spoof hook failed', e);
+  }
+
+  try {
+    var origOpen = XMLHttpRequest.prototype.open;
+    var origSend = XMLHttpRequest.prototype.send;
+    var origSetHeader = XMLHttpRequest.prototype.setRequestHeader;
+    XMLHttpRequest.prototype.open = function (method, url) {
+      this.__tfPlayer = isPlayerUrl(url);
+      return origOpen.apply(this, arguments);
+    };
+    XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
+      try {
+        if (spoofOn && this.__tfPlayer && /^x-youtube-client-version$/i.test(name)) {
+          value = SPOOF_VERSION;
+        }
+      } catch (e) {}
+      return origSetHeader.apply(this, [name, value]);
+    };
+    XMLHttpRequest.prototype.send = function (body) {
+      try {
+        if (spoofOn && this.__tfPlayer && typeof body === 'string') {
+          body = rewritePlayerBody(body);
+        }
+      } catch (e) {}
+      return origSend.apply(this, [body]);
+    };
+    console.log('[TubeFree] player-request spoof installed (XHR)');
+  } catch (e) {
+    console.error('[TubeFree] XHR spoof hook failed', e);
+  }
+
+  /* ---- response hooks ---- */
+
+  /* v10: ad-response scrubbing OFF by default. With native SABR playback,
+     emptying adPlacements/adSlots makes the player die at the ad->content
+     boundary (~50s in, "Se produjo un error"; v9 log: PL until 50s then ER,
+     network healthy). Re-enable for debugging:
+     localStorage['tubefree-adblock'] = 'on' */
+  var adScrubOn = false;
+  try {
+    adScrubOn = window.localStorage.getItem('tubefree-adblock') === 'on';
+  } catch (e) {}
+  console.log('[TubeFree] ad-response scrub ' + (adScrubOn ? 'ON' : 'OFF'));
+
+  function scrubAds(o) {
+    if (!o || typeof o !== 'object') return;
+    if (!adScrubOn) return;
+    if (o.adPlacements) o.adPlacements = [];
+    if (o.playerAds) o.playerAds = false;
+    if (o.adSlots) o.adSlots = [];
+    try {
+      var c = o.contents && o.contents.tvBrowseRenderer &&
+        o.contents.tvBrowseRenderer.content &&
+        o.contents.tvBrowseRenderer.content.tvSurfaceContentRenderer &&
+        o.contents.tvBrowseRenderer.content.tvSurfaceContentRenderer.content &&
+        o.contents.tvBrowseRenderer.content.tvSurfaceContentRenderer.content.sectionListRenderer;
+      if (c && c.contents && c.contents.filter) {
+        c.contents = c.contents.filter(function (elm) {
+          return !(elm && (elm.adSlotRenderer || elm.feedNudgeRenderer));
+        });
+      }
+    } catch (e) {}
+  }
+
+  function scrubStreaming(o) {
+    if (!o || typeof o !== 'object') return;
+    var sd = o.streamingData;
+    if (!sd || typeof sd !== 'object') return;
+    var direct = 0, ciphered = 0;
+    var count = function (list) {
+      if (!list || !list.length) return;
+      for (var i = 0; i < list.length; i++) {
+        var f = list[i];
+        if (!f) continue;
+        if (f.url) direct++;
+        else if (f.signatureCipher) ciphered++;
+      }
+    };
+    count(sd.formats);
+    count(sd.adaptiveFormats);
+    console.log('[TubeFree] formats direct=' + direct + ' ciphered=' + ciphered);
+    /* v9: streamingData stays untouched. The native player handles SABR and
+       applies the n-transform itself; removing SABR keys and pre-transforming
+       n produced broken/double-transformed URLs -> fmt.missing. */
+    return;
+    var sabrKeys = [];
+    for (var k in sd) {
+      if (/^sabr/i.test(k) || k === 'serverAbrStreamingUrl') sabrKeys.push(k);
+    }
+    if (sabrKeys.length) {
+      if (direct + ciphered > 0) {
+        for (var i = 0; i < sabrKeys.length; i++) delete sd[sabrKeys[i]];
+        console.log('[TubeFree] SABR disabled for this player response (' + sabrKeys.join(',') + ' removed)');
+      } else {
+        console.warn('[TubeFree] SABR-only player response; keeping ' + sabrKeys.join(',') + ' (no url/signatureCipher formats available)');
+      }
+    }
+    try {
+      var ns = __tfNsig.fixFormats(sd);
+      console.log('[TubeFree] nsig: fixed ' + ns.fixed + ' urls (pending=' + ns.pending + ')');
+    } catch (e) {
+      console.error('[TubeFree] nsig: FAIL ' + (e && e.message || e));
+    }
+  }
+
+  function scrub(o) {
+    try { scrubAds(o); } catch (e) {}
+    try { scrubStreaming(o); } catch (e) {}
+    return o;
+  }
+
+  try {
+    var origParse = JSON.parse;
+    JSON.parse = function () {
+      var r = origParse.apply(this, arguments);
+      return scrub(r);
+    };
+    console.log('[TubeFree] adblock/SABR hook installed (JSON.parse)');
+  } catch (e) {
+    console.error('[TubeFree] JSON.parse hook failed', e);
+  }
+
+  try {
+    if (typeof Response !== 'undefined' && Response.prototype && Response.prototype.json) {
+      var origJson = Response.prototype.json;
+      Response.prototype.json = function () {
+        return origJson.apply(this, arguments).then(scrub);
+      };
+      console.log('[TubeFree] adblock/SABR hook installed (Response.json)');
+    }
+  } catch (e) {
+    console.error('[TubeFree] Response.json hook failed', e);
+  }
+})();
+
+/* [TubeFree] Config seed: the TizenTube bundle does
+   JSON.parse(window.localStorage['ytaf-configuration']) at load, which
+   throws "SyntaxError: "undefined" is not valid JSON" on first run
+   (caught upstream, but noisy). Pre-seed an empty object so configRead()
+   populates defaults cleanly. Guarded: localStorage may throw. */
+(function () {
+  'use strict';
+  try {
+    var KEY = 'ytaf-configuration';
+    var raw = window.localStorage.getItem(KEY);
+    var parsed = raw ? JSON.parse(raw) : null;
+    if (!parsed || typeof parsed !== 'object') {
+      parsed = {};
+      console.log('[TubeFree] config seeded (' + KEY + ')');
+    }
+    /* v10: the bundle's own adblock.js empties adPlacements too — same
+       SABR kill as our scrub. Force it off (see scrubAds note). */
+    if (parsed.enableAdBlock !== false) {
+      parsed.enableAdBlock = false;
+      console.log('[TubeFree] bundle enableAdBlock forced OFF');
+    }
+    window.localStorage.setItem(KEY, JSON.stringify(parsed));
+  } catch (e) {
+    console.warn('[TubeFree] config seed failed (non-fatal)', e);
+  }
+})();
+
+/* ======================================================================
+   [TubeFree] Bootstrap: the TizenTube bundle touches document.body at
+   eval time (MutationObserver.observe), which is null at document-start
+   on this engine and killed v1 with "Uncaught TypeError: observe...
+   parameter 1 is not of type 'Node'". So the bundle body lives inside
+   __tubefreeMain() and only runs once document.body exists (poll +
+   DOMContentLoaded + 10s forced fallback), all inside try/catch so a
+   bundle failure can never surface as uncaught or kill the Phase 0
+   hooks above.
+   ====================================================================== */
+function __tubefreeMain() {
+/* __TIZENTUBE_UPSTREAM_BUNDLE__ */
+}
+
+(function () {
+  'use strict';
+  var started = false;
+  function start(force) {
+    if (started) return;
+    if (!force && !document.body) return;
+    started = true;
+    try {
+      __tubefreeMain();
+      console.log('[TubeFree] TizenTube bundle started (body=' + !!document.body + ')');
+    } catch (e) {
+      console.error('[TubeFree] bundle error — Phase 0 hooks still active:', e);
+    }
+  }
+  var iv = setInterval(function () {
+    if (document.body) {
+      clearInterval(iv);
+      start(false);
+    }
+  }, 50);
+  document.addEventListener('DOMContentLoaded', function () {
+    clearInterval(iv);
+    start(false);
+  });
+  setTimeout(function () {
+    clearInterval(iv);
+    start(true);
+  }, 10000);
+})();
